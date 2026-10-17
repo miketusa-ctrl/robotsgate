@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Should I let Meta's Muse agents onto my site? (October 2026)</title>
+<meta name="description" content="Meta's Muse agent shops and books on websites in its own cloud browser, and many sites block it as a bot. What Meta has and hasn't published (user-agent, IPs, robots.txt, the Personal Agent Protocol), and your options: allow, rate-limit, challenge, require login or block.">
+<link rel="canonical" href="https://robotsgate.mike-tusa.workers.dev/guides/should-i-let-muse-agents-onto-my-site">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Should I let Meta's Muse agents onto my site? (October 2026)">
+<meta property="og:description" content="What Meta has and hasn't published about Muse (user-agent, IPs, robots.txt, the Personal Agent Protocol), and your options: allow, rate-limit, challenge, require login or block. Unofficial; not affiliated with Meta.">
+<meta property="og:url" content="https://robotsgate.mike-tusa.workers.dev/guides/should-i-let-muse-agents-onto-my-site">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="/">RobotsGate</a>
+  <nav><a href="/#generate">Generator</a><a href="/#validate">Validator</a><a href="/#check">Site check</a><a href="/docs.html">API</a><a href="/guides/">Guides</a></nav>
+</header>
+<main>
+<h1>Should I let Meta's Muse agents onto my site?</h1>
+<p class="lead">Short answer: if people buy, book or get support on your site, usually yes. Meta's view is that a Muse visit is normally a customer who asked their agent to do something with you. Limit abuse with the controls you already use for people, and don't count on robots.txt, because Meta hasn't published a robots.txt token for Muse.</p>
+<div class="note">Written October 8, 2026, from the sources linked on this page, all read that day. Meta announced on October 6 that it is building an open standard for personal agents to identify themselves to businesses, and no specification has been published yet. This page will change when one is. RobotsGate is not affiliated with Meta, Sierra or Cloudflare.</div>
+
+<h2>What Muse is</h2>
+<p>Muse is Meta's personal AI agent, launched on iOS and Android on September 8, 2026. It passed 6.6 million installs, according to Sensor Tower estimates reported by <a href="https://techcrunch.com/2026/10/07/metas-muse-launches-on-ipad-just-a-month-after-its-mobile-debut/" target="_blank" rel="noopener noreferrer">TechCrunch</a>. Meta says Muse "runs on Muse Secure VM, a dedicated secure computer with its own browser" and "can open a browser, fill out forms, and negotiate on their behalf" (<a href="https://about.fb.com/news/2026/09/introducing-muse-personal-ai-agent/" target="_blank" rel="noopener noreferrer">Meta</a>). In other words, it visits your pages in a real browser running in Meta's cloud, one task for one person.</p>
+<p>Meta also says Muse "is designed to continue only with explicit user approval" for sensitive actions "like signing in, completing a reservation, or making a purchase" (<a href="https://www.facebook.com/business/news/a-new-way-for-businesses-and-personal-agents-to-work-together" target="_blank" rel="noopener noreferrer">Meta for Business, October 6</a>).</p>
+
+<h2>What Meta has and hasn't published (as of October 8, 2026)</h2>
+<table>
+<tr><th>Identifier</th><th>Published by Meta for Muse?</th><th>Notes</th></tr>
+<tr><td>User-agent string</td><td>No</td><td>Meta's <a href="https://developers.facebook.com/documentation/sharing/webmasters/web-crawlers" target="_blank" rel="noopener noreferrer">web crawlers page</a> (updated May 21, 2026) lists five crawlers and none of them is Muse. Meta's Muse announcements don't give a user-agent either. Cloudflare's <a href="https://radar.cloudflare.com/bots/directory/muse" target="_blank" rel="noopener noreferrer">Radar bots directory</a> lists Muse under the user-agent pattern <code>muse-</code> (category Agent). That listing comes from Cloudflare, not from Meta's documentation, and it gives a pattern rather than a full string. Cloudflare marks the entry "Verified", which under Cloudflare's general <a href="https://developers.cloudflare.com/bots/concepts/bot/verified-bots/" target="_blank" rel="noopener noreferrer">definition</a> means a bot "declares who it is deterministically, through a cryptographic Web Bot Auth signature, a published IP list with a stable user-agent, or reverse DNS" and "obeys robots.txt and crawl directives", but Cloudflare doesn't say how it recognises Muse, and Meta hasn't confirmed either point.</td></tr>
+<tr><td>IP ranges</td><td>No</td><td>None for Muse. Meta's crawler page tells site owners to allow-list "the user agent strings or the IP addresses (more secure)", but that link points to a section of the page that contains no IP list.</td></tr>
+<tr><td>robots.txt token</td><td>No</td><td>Meta hasn't said whether Muse reads robots.txt at all. Cloudflare's directory shows its usual <code>User-Agent: muse-</code> / <code>Disallow: /</code> example, but that is Cloudflare's standard template, not a statement that Muse obeys it.</td></tr>
+<tr><td>Signed requests / identity standard</td><td>Not yet</td><td>Meta and Sierra announced the <strong>Personal Agent Protocol</strong> on October 6. Sierra describes it as "built on OAuth" and plans "to publish the v0.1 specification later this month" (<a href="https://sierra.ai/blog/introducing-personal-agent-protocol" target="_blank" rel="noopener noreferrer">Sierra</a>). Cloudflare's Muse entry lists no Web Bot Auth key directory. Meta hasn't said Muse signs its requests.</td></tr>
+</table>
+
+<h2>Muse is not Meta's crawlers</h2>
+<p>Meta documents five crawlers: FacebookExternalHit (link previews), Meta-WebIndexer (Meta AI search), Meta-ExternalAds, Meta-ExternalAgent (AI training and indexing) and Meta-ExternalFetcher (user-requested fetches, which Meta says "may bypass robots.txt rules"). Muse isn't on that list, and no Meta page says Muse uses any of these crawlers. So blocking <code>meta-externalagent</code> or <code>meta-externalfetcher</code> in robots.txt doesn't tell you anything about Muse.</p>
+
+<h2>Why your site might already be blocking Muse</h2>
+<ul>
+<li><strong>Your CDN's agent setting.</strong> Cloudflare's "Agent" control covers "user-directed agents visiting a page on behalf of a human, such as chat fetch bots and browser-use agents". Since September 15, 2026, domains that used the old Block AI Bots switch were moved to Agent "Block on pages with ads", and that is also the preset for new ad-funded domains (<a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">Cloudflare</a>). Cloudflare's directory now lists Muse as an Agent, so a site with agents blocked may turn Muse away when Cloudflare recognises it. See our <a href="/guides/cloudflare-ai-crawler-settings-robots-txt.html">Cloudflare settings guide</a>.</li>
+<li><strong>Bot detection.</strong> Bot-detection vendor Fingerprint says Muse "provides no verifiable identity, alters its browser fingerprint, and suppresses the automation flags that most bot detection depends on" and that its product labels Muse traffic anyway (<a href="https://fingerprint.com/blog/how-to-detect-meta-muse-ai-agent/" target="_blank" rel="noopener noreferrer">Fingerprint</a>). That is a vendor's claim, but it means generic anti-bot rules can catch Muse whether or not you meant them to.</li>
+<li><strong>A deliberate decision.</strong> Some businesses block personal agents on purpose. Meta itself lists the worries: "load spikes, abuse, liability", and keeping the customer relationship (<a href="https://www.facebook.com/business/news/a-new-way-for-businesses-and-personal-agents-to-work-together" target="_blank" rel="noopener noreferrer">Meta for Business</a>). GeekWire reported on September 20 that Amazon had blocked Muse. Among Amazon's stated reasons, "the agent doesn't identify itself when it browses", and the message Muse users saw cited Amazon's Conditions of Use (<a href="https://www.geekwire.com/2026/amazon-blocks-metas-muse-ai-assistant-in-new-standoff-over-agentic-shopping/" target="_blank" rel="noopener noreferrer">GeekWire</a>). CNBC reports that Amazon "is among the companies that have blocked Meta's agents, citing worries of website scraping" (<a href="https://www.cnbc.com/2026/10/06/meta-joins-companies-to-tame-chaos-of-doing-business-with-ai-bots.html" target="_blank" rel="noopener noreferrer">CNBC</a>).</li>
+</ul>
+
+<h2>Your options, and what each one costs</h2>
+<table>
+<tr><th>Option</th><th>How</th><th>Trade-off</th></tr>
+<tr><td><strong>Allow</strong></td><td>Do nothing special. Check that your CDN and bot settings (for example Cloudflare's Agent control) aren't blocking agents you want.</td><td>Keeps orders and bookings that arrive through agents. You rely on Muse's own limits and on your normal fraud checks.</td></tr>
+<tr><td><strong>Rate-limit</strong></td><td>Per-IP or per-session limits on search, cart, booking and checkout endpoints.</td><td>Stops hoarding and load spikes from any client, person or agent, without singling agents out. Needs tuning so real shoppers aren't caught.</td></tr>
+<tr><td><strong>Challenge</strong></td><td>CAPTCHA, managed challenge or a bot-management rule on sensitive actions only.</td><td>Filters automation, but can also stop the agent your customer sent, and it adds friction for people.</td></tr>
+<tr><td><strong>Require login / checkout friction</strong></td><td>Put account changes, checkout and limited-stock actions behind sign-in, per-account limits or an extra confirmation step.</td><td>Ties every important action to a real customer account. Muse asks its user before signing in or buying, so the customer stays in the loop. It slows down guests.</td></tr>
+<tr><td><strong>Block</strong></td><td>A CDN or WAF rule using your provider's agent classification. robots.txt and user-agent rules won't reliably do it, because Meta publishes no token or user-agent for Muse.</td><td>A blocked shopping agent is a lost sale. As Meta puts it, "Turning away a personal agent means turning away the customer behind it."</td></tr>
+<tr><td><strong>Watch for the standard</strong></td><td>Follow the Personal Agent Protocol (spec expected "later this month") and IETF Web Bot Auth (below).</td><td>Nothing to deploy yet. Once there's a published, verifiable way for agents to identify themselves, "allow verified agents, challenge the rest" becomes realistic.</td></tr>
+</table>
+
+<h2>A quick way to decide</h2>
+<ul>
+<li><strong>Online store, restaurant, salon, travel or other booking site:</strong> allow, rate-limit busy endpoints, and keep checkout behind your normal sign-in and payment checks. These visitors have already picked you.</li>
+<li><strong>Limited inventory (tickets, tee times, drops):</strong> per-account and per-session caps matter more than who the client is. Meta's own test is "If every Muse user made this request, would the underlying system still function?", and it uses the tee-times example itself (<a href="https://www.facebook.com/business/news/a-new-way-for-businesses-and-personal-agents-to-work-together" target="_blank" rel="noopener noreferrer">Meta for Business</a>).</li>
+<li><strong>Ad-funded content:</strong> Cloudflare's reason for blocking agents on ad pages in its preset is that "agents fetch the page with nobody there to see the ads" (<a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">Cloudflare</a>). Decide whether those visits are worth it to you.</li>
+<li><strong>Accounts with sensitive data:</strong> require login and your usual security checks for every client, agent or not.</li>
+</ul>
+
+<h2>What robots.txt can and can't do here</h2>
+<p>robots.txt is a voluntary request to crawlers that announce a token (<a href="https://www.rfc-editor.org/rfc/rfc9309.html" target="_blank" rel="noopener noreferrer">RFC 9309</a>). It works for crawlers that announce a token and follow it, such as Meta-ExternalAgent and GPTBot; some user-triggered fetchers in our <a href="/api/crawlers">registry</a>, including Meta-ExternalFetcher, may bypass it. It doesn't reliably reach a personal agent that browses like a person and has no published token. The RobotsGate <a href="/#validate">validator</a> and <a href="/#check">site check</a> now include a <code>personal_agents</code> section that says so when your file only affects declared crawlers, when <code>User-agent: *</code> / <code>Disallow: /</code> might look like a block, when you block Meta's crawlers expecting to stop Muse, or when you name an unpublished Muse token. See the <a href="/docs.html">API docs</a>.</p>
+
+<h2>What to watch for</h2>
+<ul>
+<li><strong>Personal Agent Protocol</strong> (Meta, Sierra and partners including Genesys, Rocket, Shopify, Stripe and Walmart): v0.1 specification planned for later in October 2026, with a reference implementation to follow (<a href="https://sierra.ai/blog/introducing-personal-agent-protocol" target="_blank" rel="noopener noreferrer">Sierra</a>, <a href="https://www.facebook.com/business/news/a-new-way-for-businesses-and-personal-agents-to-work-together" target="_blank" rel="noopener noreferrer">Meta</a>).</li>
+<li><strong>Web Bot Auth</strong>: cryptographically signed requests for bots and agents. It is an active IETF working-group draft, not yet an RFC (<a href="https://datatracker.ietf.org/doc/draft-ietf-webbotauth-httpsig-protocol/" target="_blank" rel="noopener noreferrer">IETF datatracker</a>). Cloudflare already accepts it as one way to verify a bot or agent (<a href="https://developers.cloudflare.com/bots/concepts/bot/verified-bots/" target="_blank" rel="noopener noreferrer">Cloudflare</a>). Meta hasn't said Muse uses it.</li>
+<li><strong>Meta's crawler page</strong>: if Meta adds a Muse entry with a user-agent, IP list or robots.txt guidance, we'll add it to the registry after checking it against Meta's page.</li>
+</ul>
+
+<h2>Sources (read October 8, 2026)</h2>
+<ul>
+<li>Meta, <a href="https://about.fb.com/news/2026/09/introducing-muse-personal-ai-agent/" target="_blank" rel="noopener noreferrer">Introducing Muse</a> (September 8, 2026)</li>
+<li>Meta for Business, <a href="https://www.facebook.com/business/news/a-new-way-for-businesses-and-personal-agents-to-work-together" target="_blank" rel="noopener noreferrer">A New Way for Businesses and Personal Agents to Work Together</a> (October 6, 2026)</li>
+<li>Sierra, <a href="https://sierra.ai/blog/introducing-personal-agent-protocol" target="_blank" rel="noopener noreferrer">Introducing Personal Agent Protocol</a> (October 6, 2026)</li>
+<li>Meta, <a href="https://developers.facebook.com/documentation/sharing/webmasters/web-crawlers" target="_blank" rel="noopener noreferrer">Meta Web Crawlers</a> (updated May 21, 2026)</li>
+<li>Cloudflare Radar, <a href="https://radar.cloudflare.com/bots/directory/muse" target="_blank" rel="noopener noreferrer">Muse bot information</a></li>
+<li>Cloudflare, <a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">September 15, 2026 settings post</a> and <a href="https://developers.cloudflare.com/bots/concepts/bot/verified-bots/" target="_blank" rel="noopener noreferrer">Verified bots</a></li>
+<li>IETF, <a href="https://datatracker.ietf.org/doc/draft-ietf-webbotauth-httpsig-protocol/" target="_blank" rel="noopener noreferrer">draft-ietf-webbotauth-httpsig-protocol</a></li>
+<li>TechCrunch, <a href="https://techcrunch.com/2026/10/07/metas-muse-launches-on-ipad-just-a-month-after-its-mobile-debut/" target="_blank" rel="noopener noreferrer">Meta's Muse launches on iPad</a> (October 7, 2026); CNBC, <a href="https://www.cnbc.com/2026/10/06/meta-joins-companies-to-tame-chaos-of-doing-business-with-ai-bots.html" target="_blank" rel="noopener noreferrer">Meta joins companies to tame 'chaos'</a> (October 6, 2026); Fingerprint, <a href="https://fingerprint.com/blog/how-to-detect-meta-muse-ai-agent/" target="_blank" rel="noopener noreferrer">How to detect Meta's Muse AI agent traffic</a> (October 6, 2026, vendor post); GeekWire, <a href="https://www.geekwire.com/2026/amazon-blocks-metas-muse-ai-assistant-in-new-standoff-over-agentic-shopping/" target="_blank" rel="noopener noreferrer">Amazon blocks Meta's Muse AI assistant in new standoff over agentic shopping</a> (September 20, 2026)</li>
+</ul>
+<p class="muted">Spot something out of date? Email <a href="mailto:digitalpromohub.support@gmail.com">digitalpromohub.support@gmail.com</a>.</p>
+</main>
+<footer>RobotsGate is a free tool. robots.txt is voluntary and is not access control. Muse details come from the sources linked above, read 2026-10-08. Meta can change Muse at any time, so check its pages for the latest information.</footer>
+</body>
+</html>

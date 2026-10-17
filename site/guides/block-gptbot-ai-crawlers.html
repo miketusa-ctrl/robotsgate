@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to block GPTBot and other AI crawlers in robots.txt</title>
+<meta name="description" content="Step-by-step robots.txt rules to block GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, CCBot and other AI training crawlers, with links to each operator's documentation.">
+<link rel="canonical" href="https://robotsgate.mike-tusa.workers.dev/guides/block-gptbot-ai-crawlers">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to block GPTBot and other AI crawlers in robots.txt">
+<meta property="og:description" content="Step-by-step robots.txt rules to block GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, CCBot and other AI training crawlers, with links to each operator's documentation.">
+<meta property="og:url" content="https://robotsgate.mike-tusa.workers.dev/guides/block-gptbot-ai-crawlers">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="/">RobotsGate</a>
+  <nav><a href="/#generate">Generator</a><a href="/#validate">Validator</a><a href="/#check">Site check</a><a href="/docs.html">API</a><a href="/guides/">Guides</a></nav>
+</header>
+<main>
+<h1>How to block GPTBot and other AI crawlers in robots.txt</h1>
+<p class="lead">Add a group for each crawler's robots.txt token with <code>Disallow: /</code>. This page lists the tokens that operators document for AI training and explains the details that often trip people up.</p>
+<div class="note"><strong>What robots.txt can and can't do:</strong> robots.txt is a voluntary protocol (<a href="https://www.rfc-editor.org/rfc/rfc9309.html" target="_blank" rel="noopener noreferrer">RFC 9309</a>). Crawlers that follow it will stay out. Nothing forces any crawler to obey it. To actually prevent access, use authentication or server/CDN-level blocking.</div>
+
+<h2>1. Block GPTBot (OpenAI)</h2>
+<p>OpenAI says GPTBot "is used to crawl content that may be used in training our generative AI foundation models" and that disallowing it "indicates a site's content should not be used in training" (<a href="https://developers.openai.com/api/docs/bots" target="_blank" rel="noopener noreferrer">OpenAI: Overview of OpenAI Crawlers</a>).</p>
+<pre>User-agent: GPTBot
+Disallow: /</pre>
+<p>This does <strong>not</strong> block OAI-SearchBot, which OpenAI uses to show sites in ChatGPT search results. OpenAI says each setting is independent.</p>
+
+<h2>2. Block AI training and open-dataset crawlers</h2>
+<p>You can list several <code>User-agent</code> lines above one set of rules. Every token below except CCBot is described by its operator as related to AI training. CCBot is Common Crawl's crawler for an open web dataset; Common Crawl's page does not describe it as an AI-training crawler, so include it only if you also want to stay out of open datasets.</p>
+<pre>User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Meta-ExternalAgent
+User-agent: Amazonbot
+User-agent: MistralAI-Training
+User-agent: CCBot
+Disallow: /</pre>
+<table>
+<tr><th>Token</th><th>Operator's description (summarised)</th><th>Source</th></tr>
+<tr><td>ClaudeBot</td><td>Collects web content that could contribute to Anthropic model training</td><td><a href="https://support.claude.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web-and-how-can-site-owners-block-the-crawler" target="_blank" rel="noopener noreferrer">Anthropic</a></td></tr>
+<tr><td>Google-Extended</td><td>A control token, not a separate crawler. It manages whether content Google crawls may be used to train Gemini models and for grounding in Gemini Apps / Vertex AI. Google says it does not affect inclusion in Google Search.</td><td><a href="https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers" target="_blank" rel="noopener noreferrer">Google</a></td></tr>
+<tr><td>Applebot-Extended</td><td>Opts content out of training Apple's foundation models. Apple says it "does not crawl webpages", and pages that disallow it can still appear in Apple search results.</td><td><a href="https://support.apple.com/en-us/119829" target="_blank" rel="noopener noreferrer">Apple</a></td></tr>
+<tr><td>Meta-ExternalAgent</td><td>Crawls for uses "such as training foundation AI models or improving products by indexing content directly"</td><td><a href="https://developers.facebook.com/documentation/sharing/webmasters/web-crawlers" target="_blank" rel="noopener noreferrer">Meta</a></td></tr>
+<tr><td>Amazonbot</td><td>Used to improve Amazon products and services, and "may be used to train Amazon AI models"</td><td><a href="https://developer.amazon.com/amazonbot" target="_blank" rel="noopener noreferrer">Amazon</a></td></tr>
+<tr><td>MistralAI-Training</td><td>Crawls content to build training datasets for Mistral models</td><td><a href="https://docs.mistral.ai/robots" target="_blank" rel="noopener noreferrer">Mistral AI</a></td></tr>
+<tr><td>CCBot</td><td>Open-dataset crawler (not described as AI training by Common Crawl). It builds an open repository of web crawl data that anyone can use.</td><td><a href="https://commoncrawl.org/ccbot" target="_blank" rel="noopener noreferrer">Common Crawl</a></td></tr>
+</table>
+<p>The <a href="/api/crawlers">full registry</a> has more tokens, and it also lists the ones we could not verify. One example is <code>Bytespider</code>: we could not load an official ByteDance page to confirm it, so we leave it out of generated rules. You can still add it yourself as a custom rule.</p>
+
+<h2>3. Mistakes to avoid</h2>
+<ul>
+<li><strong>A named group replaces <code>*</code>.</strong> Under RFC 9309, a crawler uses the group that names it and ignores the <code>User-agent: *</code> group. If you add <code>User-agent: GPTBot</code> with only <code>Allow: /</code>, your <code>*</code> disallow rules no longer apply to GPTBot.</li>
+<li><strong>Use the token, not the full user-agent string.</strong> Write <code>User-agent: GPTBot</code>, not <code>GPTBot/1.4</code> or the whole browser-like string.</li>
+<li><strong>Every host needs its own file.</strong> Anthropic and Amazon both say robots.txt is read per host or subdomain. So <code>blog.example.com</code> needs its own <code>/robots.txt</code>.</li>
+<li><strong>Changes take time.</strong> OpenAI mentions about 24 hours for search changes. Perplexity says up to 24 hours. Meta says crawlers may cache robots.txt for up to 24 hours. DuckDuckGo says 72 hours for DuckAssistBot. Amazon says it may use a cached copy up to 30 days old.</li>
+<li><strong>Blocking IP addresses can backfire.</strong> <a href="https://support.claude.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web-and-how-can-site-owners-block-the-crawler" target="_blank" rel="noopener noreferrer">Anthropic</a> and <a href="https://docs.cohere.com/docs/cohere-web-crawlers" target="_blank" rel="noopener noreferrer">Cohere</a> both note that IP blocking can stop their crawler from reading your robots.txt, so the opt-out may not be recorded.</li>
+<li><strong>Your file is public.</strong> RFC 9309 points out that listing paths in robots.txt exposes them to anyone.</li>
+</ul>
+
+<h2>4. User-triggered fetchers are different</h2>
+<p>Some agents fetch a page only when a person asks an AI assistant about it. OpenAI says robots.txt rules "may not apply" to ChatGPT-User. Perplexity says Perplexity-User "generally ignores robots.txt rules". Meta says Meta-ExternalFetcher "may bypass robots.txt". Amazon says Amzn-User "may not follow all robots.txt directives". You can still list them, but don't count on robots.txt to stop them.</p>
+
+<h2>5. Check your result</h2>
+<p>Paste your file into the <a href="/#validate">validator</a>, or run the <a href="/#check">site check</a> on your live domain. You'll see which AI crawlers are allowed or blocked and which line decides each one.</p>
+</main>
+<footer>RobotsGate is a free tool. robots.txt is voluntary and is not access control. Crawler details come from the operator pages linked above, checked 2026-10-05. Operators can change their crawlers at any time, so check their pages for the latest information.</footer>
+</body>
+</html>

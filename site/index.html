@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RobotsGate: free AI crawler robots.txt generator, validator &amp; checker</title>
+<meta name="description" content="Free tool to generate and validate robots.txt rules for AI crawlers such as GPTBot, ClaudeBot, Google-Extended and PerplexityBot, and check which AI bots a site's robots.txt allows. Based on the operators' own documentation.">
+<link rel="canonical" href="https://robotsgate.mike-tusa.workers.dev/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="RobotsGate: free AI crawler robots.txt generator, validator &amp; checker">
+<meta property="og:description" content="Free tool to generate and validate robots.txt rules for AI crawlers such as GPTBot, ClaudeBot, Google-Extended and PerplexityBot, and check which AI bots a site's robots.txt allows. Based on the operators' own documentation.">
+<meta property="og:url" content="https://robotsgate.mike-tusa.workers.dev/">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/style.css">
+<link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt">
+<link rel="service-desc" type="application/json" href="/openapi.json" title="OpenAPI 3.1">
+</head>
+<body>
+<header>
+  <a class="brand" href="/">RobotsGate</a>
+  <nav><a href="/#generate">Generator</a><a href="/#validate">Validator</a><a href="/#check">Site check</a><a href="/#pro">Pro</a><a href="/docs.html">API</a><a href="/guides/">Guides</a></nav>
+</header>
+<main>
+  <h1>Control which AI crawlers may use your site, in robots.txt</h1>
+  <p class="lead">RobotsGate is a free tool for building and checking robots.txt rules for AI crawlers. It uses a registry of crawler user-agent tokens, and each entry was checked against its operator's own documentation.</p>
+
+  <div class="note"><strong>Please read first:</strong> robots.txt is a voluntary standard (<a href="https://www.rfc-editor.org/rfc/rfc9309.html" target="_blank" rel="noopener noreferrer">RFC 9309</a>). It asks crawlers to stay out. It cannot stop them, and RFC 9309 itself says it is "not a substitute for valid content security measures". Several operators say their <em>user-triggered</em> fetchers (for example ChatGPT-User, Perplexity-User, Meta-ExternalFetcher, Amzn-User) may not follow robots.txt. If you need to actually stop access, use authentication or server/CDN-level rules.</div>
+
+  <section id="generate" class="card">
+    <h2>1. Generate robots.txt</h2>
+    <p class="muted">Pick what each group of AI crawlers should do. "Leave out" adds no rule, so those crawlers follow your <code>User-agent: *</code> rules.</p>
+    <div class="grid" id="cat-controls"></div>
+    <details><summary>Per-crawler overrides</summary><div id="agent-controls"><p class="muted">Loading registry…</p></div></details>
+    <label for="g-default">Everyone else (<code>User-agent: *</code>)</label>
+    <select id="g-default"><option value="allow">Allow (recommended for most sites)</option><option value="block">Block everything (also blocks search engines)</option></select>
+    <label for="g-disallow">Paths to disallow for everyone (one per line, e.g. <code>/admin/</code>)</label>
+    <textarea id="g-disallow" style="min-height:70px"></textarea>
+    <label for="g-sitemap">Sitemap URL (optional)</label>
+    <input id="g-sitemap" type="url" placeholder="https://example.com/sitemap.xml">
+    <label for="g-custom">Custom rules (optional, appended as-is)</label>
+    <textarea id="g-custom" style="min-height:70px" placeholder="User-agent: SomeBot&#10;Disallow: /"></textarea>
+    <button id="g-run">Generate</button>
+    <div id="g-out" hidden>
+      <label for="g-result">Your robots.txt</label>
+      <textarea id="g-result" readonly style="min-height:260px"></textarea>
+      <button class="secondary" id="g-copy">Copy</button> <button class="secondary" id="g-download">Download</button> <button class="secondary" id="g-tovalidate">Validate this</button>
+      <ul id="g-notes"></ul>
+    </div>
+  </section>
+
+  <section id="validate" class="card">
+    <h2>2. Validate robots.txt</h2>
+    <label for="v-text">Paste robots.txt</label>
+    <textarea id="v-text" placeholder="User-agent: GPTBot&#10;Disallow: /"></textarea>
+    <label for="v-path">Path to test</label>
+    <input id="v-path" type="text" value="/">
+    <button id="v-run">Validate</button>
+    <div id="v-out"></div>
+  </section>
+
+  <section id="check" class="card">
+    <h2>3. Check a live site</h2>
+    <p class="muted">Fetches <code>/robots.txt</code> from the site you enter (public http/https hosts only) and shows which AI crawlers it allows for a path.</p>
+    <label for="c-url">Site URL</label>
+    <input id="c-url" type="url" placeholder="https://example.com">
+    <label for="c-path">Path to test</label>
+    <input id="c-path" type="text" value="/">
+    <button id="c-run">Check</button>
+    <div id="c-out"></div>
+  </section>
+
+
+  <section id="pro" class="card">
+    <h2>RobotsGate Pro — $9/mo</h2>
+    <p>Higher API rate limits for automation and scripting. Free tier stays available with no key.</p>
+    <ul>
+      <li><strong>Free:</strong> 20 <code>/api/check</code> requests per minute; 60 <code>/api/generate</code> + <code>/api/validate</code> per minute (per client IP).</li>
+      <li><strong>Pro:</strong> 300 check / min and 600 generate+validate / min, keyed to your license.</li>
+    </ul>
+    <p>After checkout, Polar emails a license key (prefix <code>RBTG</code>). Send it on API calls as:</p>
+    <pre>Authorization: Bearer RBTG-…</pre>
+    <p class="muted">Or use the <code>X-License-Key</code> header. An invalid or missing key is ignored and the free limits apply (no error).</p>
+    <p><a class="button" href="https://buy.polar.sh/polar_cl_pJjxZL8dDfTebUMNAEOnWNscJgTjNZPWbiIln3H3k6l" target="_blank" rel="noopener noreferrer">Get RobotsGate Pro — $9/mo</a></p>
+  </section>
+
+  <section id="agents" class="card">
+    <h2>For AI agents (MCP)</h2>
+    <p>RobotsGate is also a remote <a href="https://modelcontextprotocol.io/" target="_blank" rel="noopener noreferrer">Model Context Protocol</a> (MCP) server with four read-only tools: <code>list_crawlers</code>, <code>generate_robots</code>, <code>validate_robots</code> and <code>check_site</code>. Most MCP clients accept this config; some use a different format (for example, VS Code uses a <code>servers</code> key). Clients with a settings screen just need the URL <code>https://robotsgate.mike-tusa.workers.dev/mcp</code>.</p>
+    <pre><code id="mcp-config">{ "mcpServers": { "robotsgate": { "type": "http", "url": "https://robotsgate.mike-tusa.workers.dev/mcp" } } }</code></pre>
+    <p class="muted">Same free limits and Pro license key as the JSON API (<a href="/docs#mcp">details</a>). Machine-readable docs: <a href="/llms.txt">llms.txt</a> · <a href="/openapi.json">OpenAPI 3.1 spec</a></p>
+  </section>
+
+  <section>
+    <h2>Guides</h2>
+    <ul>
+      <li><a href="/guides/block-gptbot-ai-crawlers.html">How to block GPTBot and other AI crawlers in robots.txt</a></li>
+      <li><a href="/guides/allow-ai-search-block-ai-training.html">Allow AI search but block AI training in robots.txt</a></li>
+      <li><a href="/guides/check-which-ai-bots-can-crawl-your-site.html">How to check which AI bots can crawl your site</a></li>
+      <li><a href="/guides/should-i-let-muse-agents-onto-my-site.html">Should I let Meta's Muse agents onto my site?</a></li>
+    </ul>
+    <h2>Where the crawler data comes from</h2>
+    <p>Each crawler in the registry links to its operator's documentation and shows the date it was last checked. You can see the full list, including tokens we could <em>not</em> verify, at <a href="/api/crawlers"><code>/api/crawlers</code></a>. If you spot an error, please compare it against the operator's page linked there.</p>
+  </section>
+</main>
+<footer>RobotsGate is a free tool. robots.txt is voluntary and is not access control. Crawler information comes from operator documentation and was last checked 2026-10-05. RobotsGate is not affiliated with Meta or any other crawler or agent operator.</footer>
+<script src="/app.js"></script>
+</body>
+</html>

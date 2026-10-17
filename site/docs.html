@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RobotsGate API docs: generate, validate and check robots.txt for AI crawlers</title>
+<meta name="description" content="JSON API reference for RobotsGate: generate robots.txt rules for AI crawlers, validate robots.txt, check a live site, and download the sourced AI crawler registry.">
+<link rel="canonical" href="https://robotsgate.mike-tusa.workers.dev/docs">
+<meta property="og:type" content="website">
+<meta property="og:title" content="RobotsGate API docs: generate, validate and check robots.txt for AI crawlers">
+<meta property="og:description" content="JSON API reference for RobotsGate: generate robots.txt rules for AI crawlers, validate robots.txt, check a live site, and download the sourced AI crawler registry.">
+<meta property="og:url" content="https://robotsgate.mike-tusa.workers.dev/docs">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/style.css">
+<link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt">
+<link rel="service-desc" type="application/json" href="/openapi.json" title="OpenAPI 3.1">
+</head>
+<body>
+<header>
+  <a class="brand" href="/">RobotsGate</a>
+  <nav><a href="/#generate">Generator</a><a href="/#validate">Validator</a><a href="/#check">Site check</a><a href="/#pro">Pro</a><a href="/docs.html">API</a><a href="/guides/">Guides</a></nav>
+</header>
+<main>
+<h1>API reference</h1>
+<p class="lead">A JSON API. No key is needed for the free tier. All endpoints send <code>Access-Control-Allow-Origin: *</code>, so you can call them from a browser. Optional Pro license keys raise rate limits (see <a href="#pro">Pro</a>).</p>
+<div class="note">robots.txt is voluntary (<a href="https://www.rfc-editor.org/rfc/rfc9309.html" target="_blank" rel="noopener noreferrer">RFC 9309</a>). The results below show what a robots.txt file <em>asks</em> crawlers to do. They do not show what crawlers actually do.</div>
+
+<h2>Errors</h2>
+<p>Errors come back as JSON with a matching HTTP status:</p>
+<pre>{ "error": { "code": "invalid_input", "message": "Invalid generate request.", "details": ["categories.training must be one of allow, block, omit"] } }</pre>
+<table>
+<tr><th>Status</th><th>code</th><th>When</th></tr>
+<tr><td>400</td><td>invalid_input, invalid_json, url_not_allowed</td><td>Bad parameters, bad JSON, or a URL that is not allowed (non-http(s), private/local address, credentials, non-default port)</td></tr>
+<tr><td>404</td><td>not_found</td><td>Unknown endpoint</td></tr>
+<tr><td>405</td><td>method_not_allowed</td><td>Wrong HTTP method</td></tr>
+<tr><td>413</td><td>payload_too_large</td><td>Request body over 1,000,000 bytes, or robots_txt over 512,000 bytes</td></tr>
+<tr><td>429</td><td>rate_limited</td><td>Too many requests from one client. Free: 20 <code>/api/check</code> or 60 <code>/api/generate</code>+<code>/api/validate</code> per 60 seconds. Pro (valid license): 300 check or 600 generate+validate per 60 seconds. Response includes <code>Retry-After</code>.</td></tr>
+<tr><td>415</td><td>unsupported_media_type</td><td>POST without <code>Content-Type: application/json</code></td></tr>
+<tr><td>422</td><td>too_complex</td><td>The robots.txt needs more work than the per-request limit allows (<code>/api/validate</code> and <code>/api/check</code>). The message and <code>details</code> (<code>{stage, limit}</code>) say which stage ran out (<code>parse</code>, <code>normalize</code>, <code>compile</code> or <code>match</code>); on <code>/api/check</code> it says the site's robots.txt is too large or complex to analyse, and when the <code>match</code> stage ran out it suggests checking a shorter <code>path</code>. Practical limits: about 34,000 plain rules (the whole 512,000-byte input), about 18,000 rules with a literal prefix or <code>$</code> suffix, about 12,000 rules starting with <code>/*</code> (on a 2,048-character path, about 4,000 when the rule text is absent from the path and about 700 when it nearly matches everywhere), and about 70,000 <code>%</code>-escapes in one rule. This is a limit of this checker, not of robots.txt: Google reads up to 500 KiB.</td></tr>
+<tr><td>502 / 504</td><td>upstream_error, too_many_redirects, dns_check_failed / upstream_timeout</td><td>/api/check could not fetch the site's robots.txt (timeout is 8 seconds), or the DNS safety check could not be completed. The check fails closed, so if the DNS lookup errors the request is refused.</td></tr>
+</table>
+
+<h2 id="crawlers">GET /api/crawlers</h2>
+<p>Returns the AI crawler registry. Optional <code>?category=training|dataset|search|user_fetch|other</code>.</p>
+<p>Each entry has: <code>name</code> (the robots.txt token), <code>operator</code>, <code>category</code>, <code>purpose</code>, <code>respects_robots</code> (<code>yes</code>, <code>no_user_triggered</code>, or <code>not_stated</code>, based on what the operator documents), <code>robots_notes</code>, <code>docs_url</code> (the operator's page), <code>date_checked</code>, and <code>verification_method</code>. The response also lists <code>unverified</code> tokens that we could not confirm from official documentation, and these are never used in generated rules.</p>
+<p><code>personal_agents</code> (added in 0.2.7) covers user-driven browsing agents such as Meta's Muse, which are not crawlers. It has <code>description</code>, <code>date_checked</code>, <code>robots_txt_controls_them</code> (<code>not_reliably</code>), <code>agents</code>, <code>options</code> (allow, rate-limit, challenge, require login, block, watch for the standard, each with its trade-off), <code>signed_agents_note</code>, <code>sources</code> and <code>disclaimer</code>. Each agent shows what its operator has published (<code>operator_published</code>: <code>user_agent</code>, <code>ip_ranges</code>, <code>robots_txt_token</code>, <code>request_signature</code>; <code>null</code> means nothing is published) and, separately, <code>third_party_listings</code> such as Cloudflare Radar's (with <code>verified_by_cloudflare</code>, Cloudflare's own label). As of 2026-10-08 Meta publishes none of these for Muse, so Muse is not a registry crawler and is never used in generated rules. See <a href="/guides/should-i-let-muse-agents-onto-my-site.html">Should I let Muse agents onto my site?</a> RobotsGate is not affiliated with Meta.</p>
+<pre>curl https://robotsgate.mike-tusa.workers.dev/api/crawlers?category=training</pre>
+
+<h2 id="generate">POST /api/generate</h2>
+<p>Builds a robots.txt file.</p>
+<table>
+<tr><th>Field</th><th>Type</th><th>Meaning</th></tr>
+<tr><td>categories</td><td>object</td><td>Map of category to <code>allow</code>, <code>block</code> or <code>omit</code> (omit means no rule, so the <code>*</code> group applies)</td></tr>
+<tr><td>agents</td><td>object</td><td>Per-token overrides, e.g. <code>{"GPTBot":"block"}</code>. Tokens not in the registry are accepted (letters, digits, <code>_ . -</code>, up to 64 characters) and the response includes a note about them. Max 100.</td></tr>
+<tr><td>default</td><td>"allow" | "block"</td><td>Policy for <code>User-agent: *</code> (default <code>allow</code>)</td></tr>
+<tr><td>disallow_paths / allow_paths</td><td>string[]</td><td>Paths for <code>*</code>. These are also copied into the group of explicitly allowed AI crawlers, because a named group replaces the <code>*</code> group. Max 100 paths, 512 characters each.</td></tr>
+<tr><td>sitemaps (or sitemap)</td><td>string[] (string)</td><td>Absolute http(s) sitemap URLs, max 20</td></tr>
+<tr><td>custom_rules</td><td>string</td><td>Appended as written (max 20,000 bytes). Any parse problems are returned in <code>custom_rules_diagnostics</code>.</td></tr>
+</table>
+<pre>curl -X POST https://robotsgate.mike-tusa.workers.dev/api/generate \
+  -H 'content-type: application/json' \
+  -d '{"categories":{"training":"block","dataset":"block","search":"allow"},"disallow_paths":["/admin/"],"sitemaps":["https://example.com/sitemap.xml"]}'</pre>
+<p>Response: <code>{ robots_txt, summary: [{name, action, source, in_registry}], notes: [], custom_rules_diagnostics, personal_agents_note }</code>. <code>personal_agents_note</code> (0.2.7) is a reminder that robots.txt can't target personal agents such as Meta's Muse. RobotsGate is not affiliated with Meta.</p>
+
+<h2 id="validate">POST /api/validate</h2>
+<p>Body: <code>{ "robots_txt": "...", "path": "/blog/post" }</code> (path is optional and defaults to <code>/</code>).</p>
+<p>Response: <code>valid</code>, <code>errors</code>, <code>warnings</code>, <code>info</code> (each item has <code>{line, code, message}</code>), <code>stats</code>, and <code>ai_crawlers</code>. Each <code>ai_crawlers</code> item has <code>status</code> (<code>allowed</code>/<code>blocked</code> for the path), <code>root_blocked</code>, <code>matched_group</code>, <code>match_type</code> (<code>exact</code>, <code>fallback</code>, <code>wildcard</code>, <code>none</code>), and <code>deciding_rule</code>.</p>
+<p><code>personal_agents</code> (added in 0.2.7, also in <code>/api/check</code> results; <code>null</code> when robots.txt was unreachable) explains what the file can and can't do about personal agents such as Meta's Muse. It never changes <code>valid</code>, <code>errors</code>, <code>warnings</code> or <code>ai_crawlers</code>. Fields: <code>robots_txt_controls_them</code> (<code>not_reliably</code>), <code>declared_ai_crawlers_blocked</code> (count for the path), <code>agents_without_published_identifier</code>, <code>findings</code> (each <code>{code, level, message}</code>, level <code>notice</code> or <code>info</code>), <code>guide_url</code> and <code>as_of</code>. Finding codes: <code>declared_crawlers_only</code> (the file blocks declared AI crawlers, which doesn't reliably reach personal agents), <code>wildcard_not_agent_block</code> (<code>User-agent: *</code> / <code>Disallow: /</code> is not a block for personal agents), <code>meta_crawlers_not_muse</code> (blocking Meta's crawlers doesn't cover Muse), <code>muse_token_unpublished</code> (the file names a Muse token Meta hasn't published), and <code>no_ai_blocks</code>. The object also carries <code>disclaimer</code> ("RobotsGate is not affiliated with Meta.").</p>
+<p><code>deciding_rule</code> is <code>{type, path, line}</code> or null; a <code>path</code> longer than 256 characters is cut to its first 256 and the rule gets <code>path_truncated: true</code>.</p>
+<p><code>diagnostics</code> (also in <code>/api/check</code> results): <code>{truncated, limit, errors, warnings, info}</code> with the total counts. Each of <code>errors</code>, <code>warnings</code> and <code>info</code> lists at most <code>limit</code> (500) entries; <code>truncated</code> is true when any list was cut.</p>
+<p>Matching follows RFC 9309. Groups are matched by product token without regard to case, and groups for the same token are combined. If no group names the crawler, the <code>*</code> group applies. The longest matching rule wins, and when an Allow and a Disallow rule are equally long, Allow wins. <code>*</code> and <code>$</code> wildcards are supported. The <code>fallback</code> match type is used where the operator documents one: Apple and ImageSift say their bots follow Googlebot rules when they are not named.</p>
+
+<h2 id="check">GET /api/check?url=https://example.com&amp;path=/</h2>
+<p>Fetches <code>/robots.txt</code> from the site's origin and returns the same analysis as <code>/api/validate</code>, plus <code>http_status</code>, <code>final_url</code>, <code>redirects</code> and <code>robots_found</code>.</p>
+<ul>
+<li>Only <code>http</code>/<code>https</code> on the default ports. Credentials in URLs, localhost, <code>.local</code>/<code>.internal</code>-style names, and private, loopback, link-local or reserved IP addresses are rejected. Hostnames are also resolved over DNS-over-HTTPS, and requests are rejected if the name points to a private address. If that DNS check cannot be completed (lookup error, timeout, or DNS server failure), the request is refused with 502 <code>dns_check_failed</code>.</li>
+<li>Up to 5 redirects. Each hop is checked again.</li>
+<li>8-second timeout. Only the first 512,000 bytes are analysed.</li>
+<li><strong>Rate limit (free):</strong> 20 requests per 60 seconds per client IP (an IPv6 client counts per /64). <strong>Pro:</strong> 300 per 60 seconds per license. Over the limit you get 429 <code>rate_limited</code> with a <code>Retry-After</code> header. Free limits are counted separately in each Cloudflare location and are approximate.</li>
+<li><strong>Caching:</strong> results for each site are cached for up to 5 minutes. The response includes <code>cache.hit</code> and an <code>X-RobotsGate-Cache</code> header, and <code>fetched_at</code> shows when robots.txt was actually fetched. The <code>path</code> is evaluated fresh on every request.</li>
+<li>The checker identifies itself as <code>RobotsGate/0.3.2 (+https://robotsgate.mike-tusa.workers.dev; robots.txt checker; fetches /robots.txt only)</code>.</li>
+<li>A 4xx response is reported as "unavailable": under RFC 9309, crawlers may access anything. A 5xx response is reported as "unreachable": under RFC 9309, crawlers should assume complete disallow.</li>
+</ul>
+
+<h2 id="mcp">MCP server, llms.txt and OpenAPI</h2>
+<p>RobotsGate is also a remote MCP server at <code>POST https://robotsgate.mike-tusa.workers.dev/mcp</code> (Streamable HTTP, JSON-RPC 2.0, stateless, JSON responses, no sessions; <code>GET</code> and <code>DELETE</code> return 405). Protocol versions 2026-07-28 (per-request <code>_meta</code>) and 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05 (<code>initialize</code>). Most MCP clients accept this config; some use a different format (for example, VS Code uses a <code>servers</code> key):</p>
+<pre>{ "mcpServers": { "robotsgate": { "type": "http", "url": "https://robotsgate.mike-tusa.workers.dev/mcp" } } }</pre>
+<table>
+<tr><th>Tool</th><th>Arguments</th><th>Same engine as</th><th>Counts against</th></tr>
+<tr><td><code>list_crawlers</code></td><td><code>category</code> (optional)</td><td><code>GET /api/crawlers</code></td><td>The light MCP cap (about 120 per minute per IP)</td></tr>
+<tr><td><code>generate_robots</code></td><td>The <code>/api/generate</code> body fields</td><td><code>POST /api/generate</code></td><td>The shared generate + validate limit</td></tr>
+<tr><td><code>validate_robots</code></td><td><code>robots_txt</code> (up to 50,000 characters over MCP; the whole request must fit in 64 KB), <code>path</code></td><td><code>POST /api/validate</code></td><td>The shared generate + validate limit</td></tr>
+<tr><td><code>check_site</code></td><td><code>url</code>, <code>path</code></td><td><code>GET /api/check</code> (same URL and private-address checks)</td><td>The <code>/api/check</code> limit</td></tr>
+</table>
+<p>All four tools are read-only. MCP uses the same license headers, soft-fail and counters as the JSON API (free: 20 checks and 60 generate/validate calls per 60 seconds per client IP; Pro: 300 and 600 per license). <code>initialize</code>, <code>tools/list</code>, <code>ping</code> and <code>list_crawlers</code> share a light cap of about 120 per minute per IP (over it: HTTP 429 with <code>Retry-After</code>; for <code>list_crawlers</code>, a tool result with <code>isError: true</code>). Input errors and rate limits inside <code>tools/call</code> come back as a tool result with <code>isError: true</code>, <code>_meta["robotsgate/error"]</code> (<code>code</code>, <code>httpStatus</code>, <code>retryAfterSeconds</code>) and a <code>Retry-After</code> header. Requests are capped at 64 KB, with one <code>tools/call</code> per HTTP request. An <code>Origin</code> header must be an https origin or http loopback (otherwise 403). There is no 401: a bad key just gets the free limits.</p>
+<p>Machine-readable docs: <a href="/llms.txt">/llms.txt</a>, <a href="/openapi.json">/openapi.json</a> (OpenAPI 3.1, generated from the code) and <a href="/.well-known/mcp/server-card.json">/.well-known/mcp/server-card.json</a> (MCP server card). <code>GET /api/health</code> returns <code>{ "ok": true, "version": "…" }</code>.</p>
+<pre>curl -s -X POST 'https://robotsgate.mike-tusa.workers.dev/mcp' -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"check_site","arguments":{"url":"example.com"}}}'</pre>
+
+<h2 id="pro">RobotsGate Pro</h2>
+<p>Optional paid tier (<strong>$9/mo</strong>) for higher API rate limits. Product slug <code>robotsgate-pro</code>; license keys use prefix <code>RBTG</code>.</p>
+<table>
+<tr><th></th><th>Free</th><th>Pro</th></tr>
+<tr><td><code>/api/check</code></td><td>20 / 60 s per client IP</td><td>300 / 60 s per license</td></tr>
+<tr><td><code>/api/generate</code> + <code>/api/validate</code></td><td>60 / 60 s per client IP</td><td>600 / 60 s per license</td></tr>
+</table>
+<p>Send the license key on gated endpoints (<code>/api/check</code>, <code>/api/generate</code>, <code>/api/validate</code>) using either header:</p>
+<pre>Authorization: Bearer RBTG-…
+# or
+X-License-Key: RBTG-…</pre>
+<p>CORS allows <code>authorization</code> and <code>x-license-key</code>. A successful Pro request includes <code>x-robotsgate-plan: pro</code> (and <code>x-ratelimit-remaining</code> when available).</p>
+<p><strong>Soft-fail:</strong> a missing, invalid, revoked, or wrong-product key does not return 401. The request continues on the free-tier rate limits and without the Pro plan header. <code>/api</code> and <code>/api/crawlers</code> stay ungated.</p>
+<pre>curl -H 'Authorization: Bearer RBTG-…' \
+  'https://robotsgate.mike-tusa.workers.dev/api/check?url=https://example.com'</pre>
+<p><a class="button" href="https://buy.polar.sh/polar_cl_pJjxZL8dDfTebUMNAEOnWNscJgTjNZPWbiIln3H3k6l" target="_blank" rel="noopener noreferrer">Get RobotsGate Pro — $9/mo</a></p>
+<h2 id="privacy">Privacy</h2>
+<p>We don't keep request logs or store the robots.txt files you send. A fetched robots.txt result for <code>/api/check</code> is cached for up to 5 minutes so repeat checks are fast, then discarded. Your IP address is used only in short-lived rate-limit counters (IPv6 per /64). If you send a RobotsGate Pro license key, we check it against our license store and do not log the key. Payment details are handled by Polar as merchant of record, not by us. The site runs on Cloudflare Workers, and Cloudflare processes requests in order to serve it.</p>
+<p>If you call RobotsGate through the RapidAPI marketplace (<code>/rapidapi/v1/*</code>), RapidAPI proxies, logs and meters those requests and handles that subscription and its billing under its own privacy policy; RapidAPI acts as a processor for those calls. Direct use of this site and its API does not involve RapidAPI. RobotsGate is not affiliated with RapidAPI, Polar or Cloudflare.</p>
+<p>Last updated: 15 October 2026 (added the RapidAPI marketplace route).</p>
+</main>
+<footer>RobotsGate is a free tool. robots.txt is voluntary and is not access control. Crawler information comes from operator documentation and was last checked 2026-10-05.</footer>
+</body>
+</html>

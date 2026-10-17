@@ -1,0 +1,56 @@
+# Public template. Replace every <PLACEHOLDER> with your own Cloudflare resource IDs
+# (wrangler kv namespace create / wrangler d1 create). Rate-limit namespace IDs must be
+# unique integers within your account. Secrets go in `wrangler secret put`, never here.
+
+name = "robotsgate"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+workers_dev = true
+
+[assets]
+directory = "./site"
+binding = "ASSETS"
+
+[vars]
+MCP_REGISTRY_AUTH = ""
+PUBLIC_URL = "https://robotsgate.mike-tusa.workers.dev"
+
+[limits]
+cpu_ms = 100
+
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "<RATE_LIMIT_NAMESPACE_ID_1>"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60
+
+[[ratelimits]]
+name = "POST_LIMITER"
+namespace_id = "<RATE_LIMIT_NAMESPACE_ID_2>"
+
+  [ratelimits.simple]
+  limit = 60
+  period = 60
+
+[[ratelimits]]
+name = "RAPIDAPI_BASIC_LIMITER"
+namespace_id = "<RATE_LIMIT_NAMESPACE_ID_3>"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+[[ratelimits]]
+name = "RAPIDAPI_PRO_LIMITER"
+namespace_id = "<RATE_LIMIT_NAMESPACE_ID_4>"
+
+  [ratelimits.simple]
+  limit = 120
+  period = 60
+
+[[kv_namespaces]]
+binding = "LICENSES"
+id = "<KV_NAMESPACE_ID>"
+preview_id = "<KV_PREVIEW_NAMESPACE_ID>"

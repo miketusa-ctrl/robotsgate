@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cloudflare's Search, Training and Agent bot settings: what they change in your robots.txt</title>
+<meta name="description" content="Since September 15, 2026, Cloudflare's Block setting for AI training also stops Googlebot, Bingbot and Applebot, and Bot Preference Sync writes rules into your robots.txt. Here is what each setting does and how to check the result.">
+<link rel="canonical" href="https://robotsgate.mike-tusa.workers.dev/guides/cloudflare-ai-crawler-settings-robots-txt">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Cloudflare's Search, Training and Agent bot settings: what they change in your robots.txt">
+<meta property="og:description" content="Since September 15, 2026, Cloudflare's Block setting for AI training also stops Googlebot, Bingbot and Applebot, and Bot Preference Sync writes rules into your robots.txt. Here is what each setting does and how to check the result.">
+<meta property="og:url" content="https://robotsgate.mike-tusa.workers.dev/guides/cloudflare-ai-crawler-settings-robots-txt">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="/">RobotsGate</a>
+  <nav><a href="/#generate">Generator</a><a href="/#validate">Validator</a><a href="/#check">Site check</a><a href="/docs.html">API</a><a href="/guides/">Guides</a></nav>
+</header>
+<main>
+<h1>Cloudflare's Search, Training and Agent bot settings: what they change in your robots.txt</h1>
+<p class="lead">If your site is on Cloudflare, your robots.txt may no longer be only the file you wrote. Here is what the 2026 settings do, which one keeps you in search, and how to check what crawlers are actually being asked.</p>
+<div class="note">This page summarises Cloudflare's own posts of <a href="https://blog.cloudflare.com/bot-preference-sync/" target="_blank" rel="noopener noreferrer">August 21, 2026</a> and <a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">September 15, 2026</a>, read on 2026-10-05. RobotsGate is not affiliated with Cloudflare. Cloudflare can change these settings at any time, so check its posts and dashboard for the latest. robots.txt is voluntary (<a href="https://www.rfc-editor.org/rfc/rfc9309.html" target="_blank" rel="noopener noreferrer">RFC 9309</a>).</div>
+
+<h2>The three controls</h2>
+<p>Since July 1, 2026, Cloudflare has let you set a policy for three kinds of bot traffic, per domain (<a href="https://blog.cloudflare.com/bot-preference-sync/" target="_blank" rel="noopener noreferrer">Cloudflare, August 21</a>; definitions from <a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">Cloudflare, September 15</a>):</p>
+<ul>
+<li><strong>Search</strong>: crawling to build a search index.</li>
+<li><strong>Training</strong>: crawling to train or fine-tune a model.</li>
+<li><strong>Agent</strong>: user-directed agents visiting a page for a person, such as chat fetch bots and browser-use agents.</li>
+</ul>
+<p>Search and Agent can be set to Allow, Block on pages with ads, or Block. Training adds a fourth option, <strong>Disallow AI Training</strong> (<a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">Cloudflare</a>).</p>
+
+<h2>What changed on September 15, 2026</h2>
+<p>Some crawlers do search and training under one user agent. Cloudflare calls them mixed-use crawlers and names Applebot, Bingbot and Googlebot. From September 15, 2026 (<a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">Cloudflare</a>):</p>
+<ul>
+<li><strong>Block</strong> and <strong>Block on pages with ads</strong> for Training now also apply to those mixed-use crawlers, so either setting affects search as well as training.</li>
+<li><strong>Disallow AI Training</strong> publishes a no-training preference in robots.txt and keeps the crawlers Cloudflare labels Accountable (Apple, Google and Microsoft) allowed for search. Every other training crawler is blocked, including the training-only crawlers run by Amazon, Anthropic, Meta and OpenAI.</li>
+<li>The old <strong>Block AI Bots</strong> switch is being deprecated in favour of the three controls, and <strong>Managed Robots.txt</strong> is being replaced by Bot Preference Sync.</li>
+<li>There is no Disallow option for Agents. Cloudflare says the web has no well-established directive for that yet.</li>
+</ul>
+<p>Existing settings were migrated. A domain that used the legacy Block AI Bots switch (Block, or Block on pages with ads) moved to Search Allow, Training Disallow AI Training, and Agent Block on pages with ads. A Training setting of Block or Block on pages with ads that was configured before September 15 moved to Disallow AI Training (<a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">Cloudflare</a>). So if you want Googlebot, Bingbot and Applebot blocked entirely, you now have to choose Block yourself, and that removes you from their search too.</p>
+
+<h2>Which setting does what</h2>
+<table>
+<tr><th>Your goal</th><th>Training setting</th><th>Effect, per Cloudflare</th></tr>
+<tr><td>Stay in search, keep content out of AI training</td><td>Disallow AI Training</td><td>A no-training preference is written to robots.txt. Accountable mixed-use crawlers keep crawling for search; other training crawlers are blocked.</td></tr>
+<tr><td>Block training crawlers everywhere, search included</td><td>Block</td><td>All training crawlers are blocked, including Applebot, Bingbot and Googlebot, so search is affected.</td></tr>
+<tr><td>Block training crawlers only where you show ads</td><td>Block on pages with ads</td><td>Crawlers, mixed-use ones included, are blocked only on pages detected as serving an ad. Cloudflare offers no Disallow AI Training for ad pages, because that page list can't be written into robots.txt.</td></tr>
+<tr><td>No restriction</td><td>Allow</td><td>All crawlers allowed unless another setting or a WAF rule blocks them.</td></tr>
+</table>
+<p>For new domains, Cloudflare offers presets. If you say the site is monetised with ads, the preset is Search Allow, Training Disallow AI Training and Agent Block on pages with ads. Otherwise everything is set to Allow. Bot Preference Sync is enabled in both presets (<a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">Cloudflare</a>).</p>
+
+<h2>How the no-training preference reaches each search crawler</h2>
+<ul>
+<li><strong>Google:</strong> through a Disallow for the <code>Google-Extended</code> token (<a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">Cloudflare</a>). Google says Google-Extended does not affect a site's inclusion in Google Search and is not used as a ranking signal (<a href="https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers" target="_blank" rel="noopener noreferrer">Google</a>).</li>
+<li><strong>Apple:</strong> through a Disallow for <code>Applebot-Extended</code> (<a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">Cloudflare</a>). Apple says that even if you disallow Applebot-Extended, your content remains discoverable through Spotlight, Siri and Safari (<a href="https://support.apple.com/en-us/119829" target="_blank" rel="noopener noreferrer">Apple</a>).</li>
+<li><strong>Bing:</strong> not through robots.txt yet. Cloudflare reports that Microsoft is building support for a robots.txt no-training preference, targeted for early 2027, and that until then Disallow AI Training does not pass the preference to Bing. Bing's current mechanism is the <code>NOARCHIVE</code> meta tag (<a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">Cloudflare</a>).</li>
+</ul>
+
+<h2>Bot Preference Sync writes to your robots.txt</h2>
+<p>Bot Preference Sync turns your dashboard choices into robots.txt rules. It is available on every plan, can be turned on or off at any time, and is on by default for new customers. If you already have a robots.txt, its lines are <strong>prepended</strong> to your file between <code># BEGIN Cloudflare Bot Preference Sync</code> and <code># END Cloudflare Bot Preference Sync</code>, and your own rules stay below. Cloudflare updates the list of bots over time. It does not read your individual custom rules, so if you make exceptions there, you can turn the sync off and write the file yourself (<a href="https://blog.cloudflare.com/bot-preference-sync/" target="_blank" rel="noopener noreferrer">Cloudflare</a>).</p>
+<p>Cloudflare's example of the added block, shortened by Cloudflare:</p>
+<pre># BEGIN Cloudflare Bot Preference Sync
+
+User-agent: TrainingBot1
+User-agent: TrainingBot2
+User-agent: TrainingBot3
+User-agent: MixedUseBot-Extended
+Disallow: /
+
+...
+
+# END Cloudflare Bot Preference Sync</pre>
+
+<h2>Watch for overlaps with your own rules</h2>
+<p>Because the synced block sits above your own rules in the same file, both are read together. Under RFC 9309, if more than one group names a crawler, the groups are <strong>combined</strong> into one, and the longest matching rule wins (<a href="https://www.rfc-editor.org/rfc/rfc9309.html#section-2.2.1" target="_blank" rel="noopener noreferrer">RFC 9309, 2.2.1</a> and <a href="https://www.rfc-editor.org/rfc/rfc9309.html#section-2.2.2" target="_blank" rel="noopener noreferrer">2.2.2</a>). For example:</p>
+<pre># added by the sync
+User-agent: GPTBot
+Disallow: /
+
+# your own, older rules further down
+User-agent: GPTBot
+Allow: /blog/</pre>
+<p>GPTBot now gets <code>Disallow: /</code> and <code>Allow: /blog/</code> as one group, and <code>/blog/</code> is the longer match, so the file still allows it under <code>/blog/</code>. The file is not the whole story, though: with Disallow AI Training or Block, Cloudflare also blocks training-only crawlers such as OpenAI's at its edge (<a href="https://blog.cloudflare.com/accountable-mixed-use-ai-crawlers/" target="_blank" rel="noopener noreferrer">Cloudflare</a>), whatever robots.txt says. Clean up overlapping groups so the file says what you mean.</p>
+<p>Also remember that a crawler named in any group ignores the <code>User-agent: *</code> group. If the synced block names a crawler, your <code>*</code> rules no longer apply to it.</p>
+
+<h2>Check what your file says now</h2>
+<ol>
+<li>Open <code>https://yourdomain/robots.txt</code> and look for the <code># BEGIN Cloudflare Bot Preference Sync</code> block.</li>
+<li>Run the <a href="/#check">RobotsGate site check</a> on your domain. For every AI crawler in the <a href="/api/crawlers">registry</a>, it shows allowed or blocked for a path, the group that matched, and the line that decided it, with groups combined as RFC 9309 requires.</li>
+<li>Check a few paths that matter to you, such as <code>/</code> and <code>/blog/</code>, with the <code>path</code> option.</li>
+</ol>
+<p>The check reads robots.txt only. It can't see Cloudflare's edge blocks, WAF rules or page-level tags such as <code>NOARCHIVE</code>. See <a href="/guides/check-which-ai-bots-can-crawl-your-site.html">How to check which AI bots can crawl your site</a> for what a robots.txt check can and can't tell you.</p>
+</main>
+<footer>RobotsGate is a free tool. robots.txt is voluntary and is not access control. Crawler details come from the operator pages linked above, checked 2026-10-05. Operators can change their crawlers at any time, so check their pages for the latest information.</footer>
+</body>
+</html>

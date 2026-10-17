@@ -1,0 +1,7 @@
+# RobotsGate - https://robotsgate.mike-tusa.workers.dev
+# robots.txt is a voluntary standard (RFC 9309), not access control.
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://robotsgate.mike-tusa.workers.dev/sitemap.xml

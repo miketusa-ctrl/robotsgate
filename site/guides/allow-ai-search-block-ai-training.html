@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allow AI search but block AI training in robots.txt</title>
+<meta name="description" content="Several AI companies use separate robots.txt tokens for search and training. Here is how to allow OAI-SearchBot, Claude-SearchBot and PerplexityBot while blocking GPTBot, ClaudeBot and other training crawlers.">
+<link rel="canonical" href="https://robotsgate.mike-tusa.workers.dev/guides/allow-ai-search-block-ai-training">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Allow AI search but block AI training in robots.txt">
+<meta property="og:description" content="Several AI companies use separate robots.txt tokens for search and training. Here is how to allow OAI-SearchBot, Claude-SearchBot and PerplexityBot while blocking GPTBot, ClaudeBot and other training crawlers.">
+<meta property="og:url" content="https://robotsgate.mike-tusa.workers.dev/guides/allow-ai-search-block-ai-training">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="/">RobotsGate</a>
+  <nav><a href="/#generate">Generator</a><a href="/#validate">Validator</a><a href="/#check">Site check</a><a href="/docs.html">API</a><a href="/guides/">Guides</a></nav>
+</header>
+<main>
+<h1>Allow AI search but block AI training in robots.txt</h1>
+<p class="lead">Several operators now publish separate tokens for "use my content to train models" and "show my site in AI search answers". That lets you allow one and block the other.</p>
+<div class="note">robots.txt is voluntary (<a href="https://www.rfc-editor.org/rfc/rfc9309.html" target="_blank" rel="noopener noreferrer">RFC 9309</a>). The descriptions below are the operators' own statements, current as of 2026-10-05. We have not independently tested how any crawler behaves.</div>
+
+<h2>Training tokens vs. search tokens, by operator</h2>
+<table>
+<tr><th>Operator</th><th>Training (block)</th><th>Search / answers (allow)</th><th>Source</th></tr>
+<tr><td>OpenAI</td><td>GPTBot</td><td>OAI-SearchBot</td><td><a href="https://developers.openai.com/api/docs/bots" target="_blank" rel="noopener noreferrer">docs</a></td></tr>
+<tr><td>Anthropic</td><td>ClaudeBot</td><td>Claude-SearchBot</td><td><a href="https://support.claude.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web-and-how-can-site-owners-block-the-crawler" target="_blank" rel="noopener noreferrer">docs</a></td></tr>
+<tr><td>Perplexity</td><td>(none listed; Perplexity says PerplexityBot is not used to crawl content for AI foundation models)</td><td>PerplexityBot</td><td><a href="https://docs.perplexity.ai/docs/resources/perplexity-crawlers" target="_blank" rel="noopener noreferrer">docs</a></td></tr>
+<tr><td>Google</td><td>Google-Extended (Gemini training and grounding)</td><td>Googlebot (Google says Google-Extended does not affect Search inclusion or ranking)</td><td><a href="https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers" target="_blank" rel="noopener noreferrer">docs</a></td></tr>
+<tr><td>Apple</td><td>Applebot-Extended</td><td>Applebot</td><td><a href="https://support.apple.com/en-us/119829" target="_blank" rel="noopener noreferrer">docs</a></td></tr>
+<tr><td>Amazon</td><td>Amazonbot ("may be used to train Amazon AI models")</td><td>Amzn-SearchBot ("does not crawl content for generative AI model training")</td><td><a href="https://developer.amazon.com/amazonbot" target="_blank" rel="noopener noreferrer">docs</a></td></tr>
+<tr><td>Meta</td><td>Meta-ExternalAgent</td><td>Meta-WebIndexer</td><td><a href="https://developers.facebook.com/documentation/sharing/webmasters/web-crawlers" target="_blank" rel="noopener noreferrer">docs</a></td></tr>
+<tr><td>Mistral AI</td><td>MistralAI-Training</td><td>MistralAI-Index</td><td><a href="https://docs.mistral.ai/robots" target="_blank" rel="noopener noreferrer">docs</a></td></tr>
+<tr><td>DuckDuckGo</td><td>(none listed; DuckDuckGo says DuckAssistBot data is not used to train AI models)</td><td>DuckAssistBot</td><td><a href="https://duckduckgo.com/duckduckgo-help-pages/results/duckassistbot" target="_blank" rel="noopener noreferrer">docs</a></td></tr>
+<tr><td>You.com</td><td>(none listed; You.com describes YouBot as the crawler that powers its search engine)</td><td>YouBot</td><td><a href="https://you.com/docs/youbot" target="_blank" rel="noopener noreferrer">docs</a></td></tr>
+</table>
+
+<h2>Example robots.txt</h2>
+<pre># Ask AI training crawlers not to collect content
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Meta-ExternalAgent
+User-agent: Amazonbot
+User-agent: MistralAI-Training
+User-agent: CCBot
+Disallow: /
+
+# Allow AI search / answer crawlers (repeat any shared Disallow paths here)
+User-agent: OAI-SearchBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: Meta-WebIndexer
+User-agent: Amzn-SearchBot
+User-agent: MistralAI-Index
+User-agent: DuckAssistBot
+User-agent: YouBot
+User-agent: Applebot
+Disallow: /admin/
+
+User-agent: *
+Disallow: /admin/
+
+Sitemap: https://example.com/sitemap.xml</pre>
+<p>Why is <code>Disallow: /admin/</code> listed twice? A crawler that finds a group with its own name ignores the <code>*</code> group, so any shared rules have to be repeated. The <a href="/#generate">generator</a> does this for you.</p>
+
+<h2>Caveats from the operators' own pages</h2>
+<ul>
+<li><strong>Apple:</strong> Applebot data may also be used for AI-generated answers in Siri and Search. Apple says publishers can opt out of that use with the <code>nosnippet</code> robots meta tag. robots.txt does not control it.</li>
+<li><strong>Meta:</strong> Meta describes Meta-ExternalAgent as covering training <em>or</em> "improving products by indexing content directly". Blocking it may therefore affect more than training.</li>
+<li><strong>Common Crawl (CCBot)</strong> builds an open dataset that anyone can use. Whether to block it is your call; its page does not describe it as an AI-training crawler.</li>
+<li><strong>Google:</strong> Google-Extended covers Gemini training <em>and</em> grounding in Gemini Apps and Vertex AI, so blocking it affects both.</li>
+<li><strong>User-triggered fetchers</strong> (ChatGPT-User, Claude-User, Perplexity-User, Meta-ExternalFetcher, Amzn-User, MistralAI-User) fetch pages when a user asks. Several operators say these may not follow robots.txt. Anthropic and Mistral describe their user agents as controllable through robots.txt.</li>
+</ul>
+<p>Build this file with the <a href="/#generate">generator</a> by setting "AI training" and "Open web datasets" to Block and "AI search / answers" to Allow. Then confirm the result in the <a href="/#validate">validator</a>.</p>
+</main>
+<footer>RobotsGate is a free tool. robots.txt is voluntary and is not access control. Crawler details come from the operator pages linked above, checked 2026-10-05. Operators can change their crawlers at any time, so check their pages for the latest information.</footer>
+</body>
+</html>

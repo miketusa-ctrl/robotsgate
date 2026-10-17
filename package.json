@@ -1,0 +1,19 @@
+{
+  "name": "robotsgate-worker",
+  "version": "0.3.2",
+  "private": true,
+  "description": "RobotsGate: free AI-crawler robots.txt generator, validator and checker (Cloudflare Worker)",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787 --ip 127.0.0.1",
+    "deploy": "wrangler deploy"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "node": "^22.23.3",
+    "wrangler": "^4.147.0"
+  },
+  "license": "MIT"
+}

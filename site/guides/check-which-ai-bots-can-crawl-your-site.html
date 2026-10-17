@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to check which AI bots can crawl your site</title>
+<meta name="description" content="How to read your robots.txt the way AI crawlers do (RFC 9309 group matching and longest-match rules), check it with a free tool, and verify that a request really came from a given AI crawler.">
+<link rel="canonical" href="https://robotsgate.mike-tusa.workers.dev/guides/check-which-ai-bots-can-crawl-your-site">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to check which AI bots can crawl your site">
+<meta property="og:description" content="How to read your robots.txt the way AI crawlers do (RFC 9309 group matching and longest-match rules), check it with a free tool, and verify that a request really came from a given AI crawler.">
+<meta property="og:url" content="https://robotsgate.mike-tusa.workers.dev/guides/check-which-ai-bots-can-crawl-your-site">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="/">RobotsGate</a>
+  <nav><a href="/#generate">Generator</a><a href="/#validate">Validator</a><a href="/#check">Site check</a><a href="/docs.html">API</a><a href="/guides/">Guides</a></nav>
+</header>
+<main>
+<h1>How to check which AI bots can crawl your site</h1>
+<p class="lead">Your robots.txt decides which AI crawlers are <em>asked</em> to stay away. Here is how crawlers read it, how to check it quickly, and what it can't tell you.</p>
+<div class="note">robots.txt is voluntary (<a href="https://www.rfc-editor.org/rfc/rfc9309.html" target="_blank" rel="noopener noreferrer">RFC 9309</a>). A check shows what your file asks crawlers to do. It does not show whether a given crawler obeys.</div>
+
+<h2>1. Look at your robots.txt</h2>
+<p>Open <code>https://yourdomain/robots.txt</code>. Every host has its own file, so check <code>www.</code>, the bare domain and any subdomains separately.</p>
+<ul>
+<li>If the file returns <strong>404 (or another 4xx)</strong>, RFC 9309 treats it as "unavailable", and crawlers may access anything.</li>
+<li>If it returns a <strong>5xx error</strong> or can't be reached, RFC 9309 says crawlers must assume everything is disallowed.</li>
+</ul>
+
+<h2>2. How a crawler picks its rules (RFC 9309)</h2>
+<ol>
+<li>It looks for groups whose <code>User-agent</code> matches its token, ignoring case. All matching groups are combined.</li>
+<li>If no group names it, it uses the <code>User-agent: *</code> group. If there is none, everything is allowed.</li>
+<li>Within the chosen rules, the <strong>longest</strong> matching <code>Allow</code>/<code>Disallow</code> path wins. When an Allow and a Disallow match equally, Allow wins. <code>*</code> matches any characters, and <code>$</code> marks the end of the URL.</li>
+<li><code>/robots.txt</code> itself is always allowed.</li>
+</ol>
+<p>Some operators add fallbacks. Apple says that if Applebot isn't named but Googlebot is, Applebot follows the Googlebot rules. Amazon says Amzn-SearchBot follows the directives for other search bots if it isn't named (<a href="https://support.apple.com/en-us/119829" target="_blank" rel="noopener noreferrer">Apple</a>, <a href="https://developer.amazon.com/amazonbot" target="_blank" rel="noopener noreferrer">Amazon</a>).</p>
+
+<h2>3. Run an automatic check</h2>
+<p>Enter your domain in the <a href="/#check">RobotsGate site check</a>, or call the API:</p>
+<pre>curl 'https://robotsgate.mike-tusa.workers.dev/api/check?url=https://example.com&amp;path=/blog/'</pre>
+<p>For each AI crawler in the <a href="/api/crawlers">registry</a>, you get <code>allowed</code> or <code>blocked</code> for that path, the group that matched (<code>exact</code>, documented <code>fallback</code>, or <code>*</code>), and the line that decided it. The check also flags syntax errors, misspelled tokens (for example <code>GPT-Bot</code> instead of <code>GPTBot</code>), rules placed before any <code>User-agent</code> line, and HTML pages served in place of robots.txt.</p>
+
+<h2>4. What a robots.txt check can't tell you</h2>
+<ul>
+<li><strong>Firewall/CDN rules:</strong> a WAF or bot-management setting may block or allow bots no matter what robots.txt says.</li>
+<li><strong>Page-level directives:</strong> meta robots tags and <code>X-Robots-Tag</code> headers are separate. Apple, for example, documents <code>nosnippet</code>, and Amazon documents <code>noarchive</code> as "do not use the page for model training".</li>
+<li><strong>User-triggered fetchers</strong> such as ChatGPT-User and Perplexity-User may not follow robots.txt, according to their operators.</li>
+<li><strong>Crawlers not in the registry:</strong> RobotsGate only lists tokens it could verify against official documentation.</li>
+</ul>
+
+<h2>5. Is that request really from the crawler?</h2>
+<p>Anyone can fake a user-agent string. Several operators publish ways to verify their traffic:</p>
+<ul>
+<li>OpenAI publishes IP ranges for GPTBot, OAI-SearchBot and ChatGPT-User (<a href="https://developers.openai.com/api/docs/bots" target="_blank" rel="noopener noreferrer">OpenAI</a>).</li>
+<li>Perplexity publishes IP lists for PerplexityBot and Perplexity-User (<a href="https://docs.perplexity.ai/docs/resources/perplexity-crawlers" target="_blank" rel="noopener noreferrer">Perplexity</a>).</li>
+<li>Amazon publishes IP addresses for Amazonbot, Amzn-SearchBot and Amzn-User (<a href="https://developer.amazon.com/amazonbot" target="_blank" rel="noopener noreferrer">Amazon</a>).</li>
+<li>Apple supports reverse DNS (<code>*.applebot.apple.com</code>) and publishes CIDR prefixes (<a href="https://support.apple.com/en-us/119829" target="_blank" rel="noopener noreferrer">Apple</a>).</li>
+<li>Common Crawl supports reverse DNS (<code>*.crawl.commoncrawl.org</code>) and publishes a JSON list of IP ranges. It also warns that some crawlers falsely claim to be CCBot (<a href="https://commoncrawl.org/ccbot" target="_blank" rel="noopener noreferrer">Common Crawl</a>).</li>
+<li>DuckDuckGo publishes DuckAssistBot IP addresses (<a href="https://duckduckgo.com/duckduckgo-help-pages/results/duckassistbot" target="_blank" rel="noopener noreferrer">DuckDuckGo</a>).</li>
+</ul>
+</main>
+<footer>RobotsGate is a free tool. robots.txt is voluntary and is not access control. Crawler details come from the operator pages linked above, checked 2026-10-05. Operators can change their crawlers at any time, so check their pages for the latest information.</footer>
+</body>
+</html>
